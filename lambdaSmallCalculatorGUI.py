@@ -62,6 +62,7 @@ class Controller:
         self.view.startMainLoop()
         
 class TkView:
+    """A GUI made using Tkinter."""
     
     def setup(self, controller):
         """Initialize the GUI window and divide it into two parts: the output and input boxes."""
