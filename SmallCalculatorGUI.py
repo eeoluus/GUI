@@ -1,13 +1,23 @@
 import tkinter as tk
+from os import getcwd, listdir
+from os.path import isfile, join
+
+path = f'{getcwd()}/strats'
+strats = [f for f in listdir(path) if isfile(join(path, f))]
+stratNames = [s.split('.')[0] for s in strats]
+
+def import_from(module, name):
+    module = __import__(module, fromlist=[name])
+    return getattr(module, name)
 
 def logStrats(strats, view):
     """List available operations in the GUI window."""
-    for strat in strats.keys():
+    for strat in strats:
         view.log.insert(tk.END, strat)
 
 def isStrat(userInput, strats):
     """Check if user-inputted operation exists in the strategies."""
-    if userInput in strats.keys():
+    if userInput in strats:
         return True
     return False
 
@@ -17,12 +27,6 @@ class Controller:
     def __init__(self, view):
         self.view = view
         self.taskBuffer = ['']
-        self.calcStrats = {
-            'subtraction': lambda x, y: x - y,
-            'addition': lambda x, y: x + y,
-            'multiplication': lambda x, y: x * y,
-            'division': lambda x, y: x / y
-            }
         
     def handleEntry(self, event):
         """Store the requested operation in a buffer or operate on integers.
@@ -32,19 +36,23 @@ class Controller:
         userInput = event.widget.get()
         self.view.log.insert(tk.END, userInput)
         
-        if isStrat(userInput, self.calcStrats):
+        if isStrat(userInput, stratNames):
             self.taskBuffer[0] = userInput
             self.view.log.insert(
                 tk.END, 
                 self.view.messageDict['integers']
-                )
+                )            
         else:
             strList = list(userInput.split(', '))
             intList = list(map(int, strList))
-            result = self.calcStrats[self.taskBuffer[0]](
+            task = import_from(
+                'strats', 
+                self.taskBuffer[0]
+                )
+            result = task.operation(
                 intList[0], 
                 intList[1]
-                )  
+                )
             message = self.view.messageDict['result']
             resultMsg = f'{message} {result}'
             self.view.log.insert(
@@ -55,14 +63,13 @@ class Controller:
                 tk.END, 
                 self.view.messageDict['nextOperation']
                 )
-            logStrats(self.calcStrats, self.view)
+            logStrats(stratNames, self.view)
             
     def start(self):
         self.view.setup(self)
         self.view.startMainLoop()
         
 class TkView:
-    """A GUI made using Tkinter."""
     
     def setup(self, controller):
         """Initialize the GUI window and divide it into two parts: the output and input boxes."""
@@ -81,7 +88,7 @@ class TkView:
             tk.END, 
             self.messageDict['welcome']
             )
-        logStrats(controller.calcStrats, self)
+        logStrats(stratNames, self)
         self.log.pack(fill=tk.BOTH, expand=1)
         
         self.entry = tk.Entry(self.root)
@@ -100,4 +107,3 @@ def main():
     
 if __name__ == '__main__':
     main()
-
