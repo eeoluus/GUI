@@ -1,15 +1,27 @@
 import tkinter as tk
+from itertools import chain
 from os import getcwd, listdir
 from os.path import isfile, join
 
-def logStrats(strats, log):
-    """List available operations in the GUI window."""
-    for strat in strats:
-        log.insert(tk.END, strat)
+def insertAutoScroll(*args, widget=None, placement=tk.END):
+    """Automatically scroll where you insert text.
+    
+    widget -- The tkinter widget where you insert the text.
+    args -- Each argument must contain a list of messages.
+    placement -- Where the message is inserted in the widget. Defaults to tk.END.
+    
+    """
+    if widget is None:
+        widget = log
+    flatIterable = chain(*args)
+    for message in flatIterable:
+        widget.insert(placement, message + '\n')
+        widget.see(placement)
 
-def import_from(module, name):
-    module = __import__(module, fromlist=[name])
-    return getattr(module, name)
+def importFrom(package, module):
+    """Import a module from a package."""
+    package = __import__(package, fromlist=[module])
+    return getattr(package, module)
 
 def isStrat(userInput, strats):
     """Check if user-inputted operation exists in the strategies."""
@@ -23,15 +35,17 @@ def handleEntry(event):
     After this, ask for integers or list available operations again, respectively.
     """
     userInput = event.widget.get()
-    log.insert(tk.END, userInput)
+    event.widget.delete(0, tk.END)
+    messageList = [userInput]
+    insertAutoScroll(messageList)
 
     if isStrat(userInput, stratNames):
         taskBuffer[0] = userInput
-        log.insert(tk.END, messageDict['integers'])   
+        insertAutoScroll(messageDict['integers'])
         
     else:
         intList = [int(string) for string in userInput.split(', ')]
-        task = import_from(
+        task = importFrom(
             'strats', 
             taskBuffer[0]
             )
@@ -39,10 +53,12 @@ def handleEntry(event):
             intList[0], 
             intList[1]
             )
-        resultMsg = f"{messageDict['result']} {result}"
-        log.insert(tk.END, resultMsg)
-        log.insert(tk.END, messageDict['nextOperation'])
-        logStrats(stratNames, log)
+        resultMsg = [f"{messageDict['result'][0]} {result}"]
+        insertAutoScroll(
+            resultMsg,
+            messageDict['nextOperation'],
+            stratNames
+            )
         
 def main():
     """Initialize the GUI window and divide it into two parts: the output and input boxes."""
@@ -50,15 +66,30 @@ def main():
     root.geometry("500x500")
     root.title("Small Calculator")
     
-    log = tk.Listbox(root)
-    log.insert(tk.END, messageDict['welcome'])
-    logStrats(stratNames, log)
+    log = tk.Text(root)
+    insertAutoScroll(
+        messageDict['welcome'],
+        stratNames,
+        widget=log    #the callback default won't yet be evaluated correctly
+        )
+    log.configure(
+        font='TkFixedFont', 
+        bg='#000000', 
+        fg='#00FF00'
+        ) 
     log.pack(fill=tk.BOTH, expand=1)
 
     entry = tk.Entry(root)
     entry.bind('<Return>', handleEntry)
+    entry.configure(
+        font='TkFixedFont', 
+        bg='#000000', 
+        fg='#00FF00',
+        insertbackground='#00FF00'
+        )
+    entry.icursor(tk.END)
     entry.pack(fill=tk.BOTH, expand=1)
-    
+
     return root, log
 
 if __name__ == '__main__':  
@@ -69,12 +100,12 @@ if __name__ == '__main__':
 
     taskBuffer = ['']
     messageDict = {
-        'welcome': 'Welcome to the Small Calculator! What do you want to do? Available operations are',
-        'integers': 'Enter two integers separated by a comma and whitespace',
-        'nextOperation': 'If you want to keep calculating, available operations are',
-        'result': 'The result is'
+        'welcome': ['Welcome to the Small Calculator! What do you want to do? Available operations are'],
+        'integers': ['Enter two integers separated by a comma and whitespace'],
+        'nextOperation': ['If you want to keep calculating, available operations are'],
+        'result': ['The result is']
         }
 
-    root, log = main()   ##root.pack_slaves() also usable for getting the widgets, if the returns get too numerous
+    root, log = main()   #root.pack_slaves() also usable for getting the widgets, if the returns get too numerous
     root.mainloop()
 
