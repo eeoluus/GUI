@@ -9,7 +9,6 @@ def insertAutoScroll(*args, widget=None, placement=tk.END):
     widget -- The tkinter widget where you insert the text.
     args -- Each argument must contain a list of messages.
     placement -- Where the message is inserted in the widget. Defaults to tk.END.
-    
     """
     if widget is None:
         widget = log
